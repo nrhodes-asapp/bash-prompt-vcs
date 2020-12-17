@@ -422,131 +422,10 @@ hg_sandbox() {
     check "hg back to good" expect_prompt "(default|✔)"
 }
 
-
-# Tests for svn sandboxes.
-run_svnadmin() {
-    check_run svnadmin "$@"
-}
-
-run_svn() {
-    check_run svn "$@"
-}
-
-svn_sandbox() {
-    prefix="${svn_prefix}"
-    local svndir
-    svndir=$(mktemp -d --tmpdir="${tmpdir}" test_svn.XXX)
-    cd "${svndir}"
-    run_svnadmin create SVNROOT
-
-    run_svn checkout "file://${svndir}/SVNROOT" trunk
-    cd "trunk"
-    check "svn init" expect_prompt "(✔)"
-
-    echo "First post!" >"${FIRST_FILENAME}"
-    run_svn add "${FIRST_FILENAME}"
-    check "svn add" expect_prompt "(△1)"
-
-    run_svn commit -m first
-    check "svn added" expect_prompt "(✔)"
-
-    echo "No tracked" >"${svndir}/trunk/notme"
-    check "svn untracked" expect_prompt "(…1)"
-
-    echo "Changed!" >"${FIRST_FILENAME}"
-    check "svn change" expect_prompt "(…1△1)"
-
-    echo "toooooo" >"${SECOND_FILENAME}"
-    check "svn various" expect_prompt "(…2△1)"
-
-    run_svn add "${SECOND_FILENAME}"
-    check "svn add second" expect_prompt "(…1△2)"
-
-    run_svn commit -m "moar files"
-    check "svn commit" expect_prompt "(…1)"
-
-    echo "spacey" >"${SPACES_FILENAME}"
-    check "svn spaces" expect_prompt "(…2)"
-    rm "${SPACES_FILENAME}"
-
-    echo poo >"${UNICODE_FILENAME}"
-    check "svn unicode" expect_prompt "(…2)"
-    rm "${UNICODE_FILENAME}"
-
-    # Like hg, svn tracks deleted but not removed files, but does not
-    # auto-stage them or commit them.  So treat it as an untracked.
-    mv "${SECOND_FILENAME}" "${MISSING_FILENAME}"
-    check "svn missing" expect_prompt "(…3)"
-    mv "${MISSING_FILENAME}" "${SECOND_FILENAME}"
-
-    # A rename counts as two changes, an add and a delete
-    run_svn rename "${SECOND_FILENAME}" "${ALT_SECOND_FILENAME}"
-    check "svn rename" expect_prompt "(…1△2)"
-
-    run_svn commit -m "save it all"
-    check "svn almost clean" expect_prompt "(…1)"
-
-    echo "short lived third" >"${THIRD_FILENAME}"
-    run_svn add "${THIRD_FILENAME}"
-    run_svn commit -m "add third"
-    run_svn rm "${THIRD_FILENAME}"
-    check "svn rm" expect_prompt "(…1△1)"
-    run_svn commit -m "we did not want third"
-
-    run_svn propset svn:ignore "notme" .
-    check "svn ignore" expect_prompt "(△1)"
-
-    # NOTE: The update is needed!
-    # See http://subversion.apache.org/faq.html#wc-out-of-date
-    run_svn update
-    run_svn commit -m "nothing to see here"
-    check "svn faux clean" expect_prompt "(✔)"
-
-    rm "${svndir}/trunk/notme"
-    check "svn clean" expect_prompt "(✔)"
-
-    # Replace svn with a that outputs nonsense to test parsing errors.
-    svn() {
-        echo "Nonesense"
-    }
-    prefix="${err_prefix}"
-    check "svn bad status" expect_prompt "(unexpected svn status output)"
-    unset svn
-
-    # Expected "FAIL": Because errtrace will enable the ERR trap to propagate
-    #                  to subshells, this test will spew noise since svn
-    #                  actually will return 1 in the case of upgrade-needed.
-    #                  The "return 1" aspect propagates to the subshell but
-    #                  the "part of ||" doesn't since the || is in the parent
-    #                  and that is what prevents set -e from killing the code.
-    #
-    #                  Note that the prompt returned *is* in fact the one
-    #                  expected so the code under test does everything OK
-    #                  unless someone sets a noisy ERR trap and even then it
-    #                  will most likely work.
-    #
-    #                  So for now work-around this by temporarily disabling
-    #                  errtrace for this test.  The product code will be
-    #                  changed post-1.0.0 release to avoid the need for this.
-    #TODO: remove, see above
-    set +o errtrace
-    # version numbers below work as of svn 1.8.13
-    # http://stackoverflow.com/questions/1364618/how-do-i-determine-the-svn-working-copy-layout-version
-    sqlite3 "${svndir}/trunk/.svn/wc.db" "PRAGMA user_version=27"
-    check "svn upgrade needed" expect_prompt "('svn upgrade' needed)"
-    #TODO: remove, see above
-    set -o errtrace
-
-    prefix="${svn_prefix}"
-    sqlite3 "${svndir}/trunk/.svn/wc.db" "PRAGMA user_version=31"
-    check "svn back to good" expect_prompt "(✔)"
-}
-
 all_sandboxes() {
     check "Not sandbox" not_sandbox
     check "git" git_sandbox
     check "hg" hg_sandbox
-    check "svn" svn_sandbox
 }
 
 prompt_output() {
@@ -566,7 +445,6 @@ prompt_output() {
     local suffix="${NP_ON}${ESC}[0m${NP_OFF}"
     local git_prefix="${NP_ON}${ESC}[0;32m${NP_OFF} "
     local hg_prefix="${NP_ON}${ESC}[0;36m${NP_OFF} "
-    local svn_prefix="${NP_ON}${ESC}[0;35m${NP_OFF} "
     local err_prefix="${NP_ON}${ESC}[0;31m${NP_OFF} "
 
     check "chromatic" all_sandboxes
@@ -576,7 +454,6 @@ prompt_output() {
     suffix=""
     git_prefix=" git:"
     hg_prefix=" hg:"
-    svn_prefix=" svn:"
     err_prefix=" ERR:"
     unset BPVCS_COLORS
 
@@ -627,7 +504,6 @@ load_and_symbols() {
             | BPVCS_HG_COLOR \
             | BPVCS_RESET_COLOR \
             | BPVCS_STAGED_INDICATOR \
-            | BPVCS_SVN_COLOR \
             | BPVCS_UNTRACKED_INDICATOR \
             | BPVCS_VERSION) ;; # these are all expected, ignore them.
             *) failmsg "UNEXPECTED: ${new}\n"
@@ -670,7 +546,6 @@ defaults() {
     # Make sure we have default colors defined and that we default to using color.
     if [[ -z "${BPVCS_GIT_COLOR:-}" ]];   then failmsg "No GIT default color!";    return 1; fi
     if [[ -z "${BPVCS_HG_COLOR:-}" ]];    then failmsg "No HG default color!";     return 1; fi
-    if [[ -z "${BPVCS_SVN_COLOR:-}" ]];   then failmsg "No SVN default color!";    return 1; fi
     if [[ -z "${BPVCS_RESET_COLOR:-}" ]]; then failmsg "No reset colors default!"; return 1; fi
     if [[ -z "${BPVCS_COLORS:-}" ]];      then failmsg "No default color!";        return 1; fi
 }

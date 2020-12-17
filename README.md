@@ -2,8 +2,8 @@ Bash Prompt Version Control State
 =================================
 [//]: # (Home: https://github.com/meadowface/bash-prompt-vcs)
 
-Show the state of [git](https://git-scm.com/), [Mercurial (hg)](https://www.mercurial-scm.org/)
-and [Subversion (svn)](https://subversion.apache.org/) working trees as ambient information in
+Show the state of [git](https://git-scm.com/) and [Mercurial (hg)](https://www.mercurial-scm.org/)
+ working trees as ambient information in
 the bash prompt.
 
 ![Screenshot](screenshot.png "Screenshot")
@@ -39,7 +39,7 @@ They can be set in `.bashrc` any time after bash-prompt-vcs.bash is included.
 
 Environment Variable        | Default | Description
 ----------------------------|:-------:|------------
-`BPVCS_VERSION`             | 1.0.0   | Version of the software. (read-only)
+`BPVCS_VERSION`             | 1.1.0   | Version of the software.
 `BPVCS_UNTRACKED_INDICATOR` | … <br/>(U+2026) | Indicates items not in version control.
 `BPVCS_CHANGED_INDICATOR`   | △ <br/>(U+25B3) | Indicates items that need to be committed.
 `BPVCS_STAGED_INDICATOR`    | ● <br/>(U+25CF) | Indicates items that are already staged for commit.
@@ -48,7 +48,6 @@ Environment Variable        | Default | Description
 `BPVCS_BEHIND_INDICATOR`    | ⇣ <br>(U+21E3)  | Indicates that the local tree is behind the remote (need to pull)
 `BPVCS_GIT_COLOR`           | `\033[0;32m` <br/>(green)  | Sequence used to color git working trees.
 `BPVCS_HG_COLOR`            | `\033[0;36m` <br/>(cyan)   | Sequence used to color hg working trees.
-`BPVCS_SVN_COLOR`           | `\033[0;35m` <br/>(purple) | Sequence used to color svn sandboxes.
 `BPVCS_ERR_COLOR`           | `\033[0;31m` <br/>(red)    | Sequence used to color errors.
 `BPVCS_RESET_COLOR`         | `\033[0m`                  | Sequence used to set normal color.
 `BPVCS_COLORS`              |  1         | Unset to turn off color in the prompt. (Doesn't matter what value it has, prompt will have colors as long as it's set.)
@@ -104,7 +103,7 @@ Similar Projects & Inspirations
 -------------------------------
 * https://gist.github.com/henrik/31631 - Short and simple, git-only.  Suggested `--porcelain` in the comments.
 * [bash-git-prompt](https://github.com/magicmonty/bash-git-prompt/) - Modeled the output after this one as I liked its terseness.
-* [vcprompt](https://github.com/djl/vcprompt) - Unmaintained, but the first I came across that made me think to include hg and svn.
+* [vcprompt](https://github.com/djl/vcprompt) - Unmaintained, but the first I came across that made me think to include hg.
 * [coderwall article](https://coderwall.com/p/pn8f0g/show-your-git-status-and-branch-in-color-at-the-command-prompt) - I liked the simplicity and progression of this article.
 * [gitprompt.sh](https://github.com/jcgoble3/gitstuff/blob/master/gitprompt.sh) - Simple.  Clean.  Has the number-indicator output pattern.
 * [Promptastic](http://painl.es/promptastic/) - I really like the look of this one in the screenshot, but would hate to have that much information in my prompt.

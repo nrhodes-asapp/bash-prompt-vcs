@@ -38,12 +38,11 @@ BPVCS_AHEAD_INDICATOR="⇡"               # used when local is ahead of remote
 BPVCS_BEHIND_INDICATOR="⇣"              # used when remote is ahead of local
 BPVCS_GIT_COLOR="\033[0;32m"            # git defaults to green
 BPVCS_HG_COLOR="\033[0;36m"             # hg defaults to cyan
-BPVCS_SVN_COLOR="\033[0;35m"            # svn defaults to purple
 BPVCS_ERR_COLOR="\033[0;31m"            # error defaults to red
 BPVCS_RESET_COLOR="\033[0m"             # reset
 BPVCS_COLORS=1                          # unset to turn off color
 
-declare -g -r BPVCS_VERSION="1.0.0"
+BPVCS_VERSION="1.1.0"
 
 bpvcs_bash_prompt() {
     local vcs               # name of VCS
@@ -164,46 +163,13 @@ bpvcs_bash_prompt() {
         return 0
     }
 
-    _svn_state() {
-        _reset_state
-
-        local line
-        while IFS= read -r line ; do
-            # Not an svn sandbox.
-            if [[ "${line:0:22}" = "svn: warning: W155007:" ]]; then
-                return 1
-            fi
-
-            # svn upgrade needed
-            if [[ "${line:0:13}" = "svn: E155036:" ]]; then
-                error="'svn upgrade' needed"
-                return 0
-            fi
-
-            case "${line:0:1}" in
-                A|M|R|D) ((changed++)) ;;
-                \?|!)    ((untracked++)) ;;
-                " ")   if [[ "${line:1:1}" = "M" ]]; then ((changed++)); fi ;;
-                # The following are all valid but ignored.
-                # Parse them to be able to detect bad output in the *) case.
-                C|I|X|~) ;;
-                *) error="unexpected svn status output"; return 0 ;;
-            esac
-        # svn status returns 0 even if not a sandbox so parse error messages
-        done < <(svn status --depth immediates 2>&1)
-
-        vcs="svn"
-        return 0
-    }
-
     # Get vcs state, checking them all in order, first one wins.
-    _git_state || _hg_state || _svn_state || true
+    _git_state || _hg_state || true
 
     # Functions are always global, so unset these so they don't leak.
     unset _reset_state
     unset _git_state
     unset _hg_state
-    unset _svn_state
 
     local vcstate prefix suffix
     if [[ -n "${error}" ]]; then
@@ -222,7 +188,6 @@ bpvcs_bash_prompt() {
         case "${vcs}" in
             git)  prefix="${BPVCS_GIT_COLOR}"; vcstate="(${branch}|${vcstate})" ;;
             hg)   prefix="${BPVCS_HG_COLOR}";  vcstate="(${branch}|${vcstate})" ;;
-            svn)  prefix="${BPVCS_SVN_COLOR}"; vcstate="(${vcstate})" ;;
             *)    return ;;
         esac
     fi
